@@ -613,7 +613,15 @@ void RenderScene()
 	// Draw the cube.
 	// Argument refers to length of side of cube.
 	// Cube is centered around current origin.
-	urgl.drawSolidCube(1.0f);
+	if (g_3DModel.numOfObjects > 0)
+	{
+		urgl.drawSolidCube(1.0f);
+	}
+	else
+	{
+		
+	}
+		
 }
 
 // Function: ChangeSize
@@ -651,7 +659,7 @@ bool ChangeSize(int w, int h)
 void COpenGLView::OnFileOpen()
 {
 	// TODO: добавьте свой код обработчика команд
-	int ttt = 1;
+	
 	// TODO: добавьте свой код обработчика команд
 	int ttt = 1;
 	CFileDialog fileDialog(TRUE, NULL, L"*.3ds");	//объект класса выбора файла
