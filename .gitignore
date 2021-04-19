@@ -1,0 +1,5 @@
+*.suo
+*.ipch
+Debug
+Browse.VC.db
+OpenGL.VC.db
