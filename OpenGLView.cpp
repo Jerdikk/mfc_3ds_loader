@@ -214,7 +214,7 @@ int COpenGLView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	//// для OpenGL
 	//////////////////////////////////////////////////////////////////////////////
 
-	GetRenderingContext();
+	//GetRenderingContext();
 	if (!GetRenderingContext())
 	{
 		//Something went wrong with getting the rendering context.
@@ -310,13 +310,6 @@ BOOL COpenGLView::GetRenderingContext()
 		return TRUE;
 	}
 
-	//Get access to modern OpenGL functionality from this old style context.
-	glewExperimental = GL_TRUE;
-	if (GLEW_OK != glewInit())
-	{
-		AfxMessageBox(_T("GLEW could not be initialized!"));
-		return FALSE;
-	}
 
 	//Get a new style pixel format
 	if (!SetupPixelFormat())
@@ -325,27 +318,36 @@ BOOL COpenGLView::GetRenderingContext()
 	}
 
 	//Setup request for OpenGL 3.2 Core Profile
-	int attribs[] =
+	/*int attribs[] =
 	{
 		WGL_CONTEXT_MAJOR_VERSION_ARB,   3,
 		WGL_CONTEXT_MINOR_VERSION_ARB,   2,
 		WGL_CONTEXT_PROFILE_MASK_ARB,  WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 		//WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
 		0, 0  //End
+	};*/
+
+	// Specify that we want to create an OpenGL 3.3 core profile context
+	int gl33_attribs[] = {
+		WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+		WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+		WGL_CONTEXT_PROFILE_MASK_ARB,  WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+		0,
 	};
+
 
 	if (wglewIsSupported("WGL_ARB_create_context") == 1)
 	{
 		//If this driver supports new style rendering contexts, create one
 		HGLRC oldContext = m_hRC;
-		if (0 == (m_hRC = m_hRC = wglCreateContextAttribsARB(m_pDC->GetSafeHdc(), 0, attribs)))
+		if (0 == (m_hRC = m_hRC = wglCreateContextAttribsARB(m_pDC->GetSafeHdc(), 0, gl33_attribs)))
 		{
 			SetError(4);
 			return FALSE;
 		}
 
-		if (!wglMakeCurrent(NULL, NULL))
-			wglDeleteContext(oldContext);
+	//	if (!wglMakeCurrent(NULL, NULL))
+	//		wglDeleteContext(oldContext);
 		if (FALSE == wglMakeCurrent(m_pDC->GetSafeHdc(), m_hRC))
 		{
 			SetError(5);
@@ -365,7 +367,7 @@ BOOL COpenGLView::GetOldStyleRenderingContext()
 {
 	//A generic pixel format descriptor. This will be replaced with a more
 	//specific and modern one later, so don't worry about it too much.
-	static PIXELFORMATDESCRIPTOR pfd =
+/*	static PIXELFORMATDESCRIPTOR pfd =
 	{
 		sizeof(PIXELFORMATDESCRIPTOR),
 		1,
@@ -418,6 +420,95 @@ BOOL COpenGLView::GetOldStyleRenderingContext()
 		SetError(5);
 		return FALSE;
 	}
+	return TRUE;*/
+
+	WNDCLASSA window_class;// = {
+	ZeroMemory(&window_class, sizeof(WNDCLASSA));
+	window_class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+	window_class.lpfnWndProc = DefWindowProcA;
+	window_class.hInstance = GetModuleHandle(0);
+	window_class.lpszClassName = "Dummy_WGL_djuasiodwa";
+	//};
+
+	if (!RegisterClassA(&window_class)) {
+		AfxMessageBox(L"Failed to register dummy OpenGL window.");
+		return FALSE;
+	}
+
+	HWND dummy_window = CreateWindowExA(
+		0,
+		window_class.lpszClassName,
+		"Dummy OpenGL Window",
+		0,
+		CW_USEDEFAULT,
+		CW_USEDEFAULT,
+		CW_USEDEFAULT,
+		CW_USEDEFAULT,
+		0,
+		0,
+		window_class.hInstance,
+		0);
+
+	if (!dummy_window) {
+		AfxMessageBox(L"Failed to create dummy OpenGL window.");
+		return FALSE;
+	}
+
+	HDC dummy_dc = ::GetDC(dummy_window);
+
+	PIXELFORMATDESCRIPTOR pfd;// = {
+	ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+	pfd.nSize = sizeof(pfd);
+		pfd.nVersion = 1;
+		pfd.iPixelType = PFD_TYPE_RGBA;
+		pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+			pfd.cColorBits = 32; 
+			pfd.cAlphaBits = 8;
+			pfd.iLayerType = PFD_MAIN_PLANE;
+			pfd.cDepthBits = 24;
+			pfd.cStencilBits = 8;
+	//};
+
+	int pixel_format = ChoosePixelFormat(dummy_dc, &pfd);
+	if (!pixel_format) {
+		AfxMessageBox(L"Failed to find a suitable pixel format.");
+		return FALSE;
+	}
+	if (!SetPixelFormat(dummy_dc, pixel_format, &pfd)) {
+		AfxMessageBox(L"Failed to set the pixel format.");
+		return FALSE;
+	}
+
+	HGLRC dummy_context = wglCreateContext(dummy_dc);
+	if (!dummy_context) {
+		AfxMessageBox(L"Failed to create a dummy OpenGL rendering context.");
+		return FALSE;
+	}
+
+	if (!wglMakeCurrent(dummy_dc, dummy_context)) {
+		AfxMessageBox(L"Failed to activate dummy OpenGL rendering context.");
+		return FALSE;
+	}
+
+	//wglCreateContextAttribsARB = (wglCreateContextAttribsARB_type*)wglGetProcAddress(
+	//	"wglCreateContextAttribsARB");
+	//wglChoosePixelFormatARB = (wglChoosePixelFormatARB_type*)wglGetProcAddress(
+	//	"wglChoosePixelFormatARB");
+
+
+	//Get access to modern OpenGL functionality from this old style context.
+	glewExperimental = GL_TRUE;
+	if (GLEW_OK != glewInit())
+	{
+		AfxMessageBox(_T("GLEW could not be initialized!"));
+		return FALSE;
+	}
+
+
+	wglMakeCurrent(dummy_dc, 0);
+	wglDeleteContext(dummy_context);
+	::ReleaseDC(dummy_window, dummy_dc);
+	::DestroyWindow(dummy_window);
 	return TRUE;
 }
 
@@ -426,6 +517,7 @@ BOOL COpenGLView::SetupPixelFormat()
 	//This is a modern pixel format attribute list.
 	//It has an extensible structure. Just add in more argument pairs 
 	//befroe the null to request more features.
+	/*
 	const int attribList[] =
 	{
 		WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
@@ -447,6 +539,45 @@ BOOL COpenGLView::SetupPixelFormat()
 	//Select a pixel format number
 	wglChoosePixelFormatARB(m_pDC->GetSafeHdc(), attribList, NULL, 1, &pixelFormat, &numFormats);
 
+	*/
+
+	/*const int attribList[] =
+	{
+		WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
+		WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
+		WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
+		WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+		WGL_COLOR_BITS_ARB, 32,
+		WGL_DEPTH_BITS_ARB, 24,
+		WGL_STENCIL_BITS_ARB, 8,
+		0, // End
+	};
+
+	int pixelFormat;
+	UINT numFormats;	
+	PIXELFORMATDESCRIPTOR pfd =
+	{
+		sizeof(PIXELFORMATDESCRIPTOR),
+		1,
+		PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    //Flags
+		PFD_TYPE_RGBA,        // The kind of framebuffer. RGBA or palette.
+		32,                   // Colordepth of the framebuffer.
+		0, 0, 0, 0, 0, 0,
+		0,
+		0,
+		0,
+		0, 0, 0, 0,
+		24,                   // Number of bits for the depthbuffer
+		8,                    // Number of bits for the stencilbuffer
+		0,                    // Number of Aux buffers in the framebuffer.
+		PFD_MAIN_PLANE,
+		0,
+		0, 0, 0
+	};
+
+	int ttt = wglChoosePixelFormatARB(m_pDC->GetSafeHdc(), attribList, NULL, 1, &pixelFormat, &numFormats);
+
+
 	//Optional: Get the pixel format's description. We must provide a 
 	//description to SetPixelFormat(), but its contents mean little.
 	//According to MSDN: 
@@ -462,6 +593,34 @@ BOOL COpenGLView::SetupPixelFormat()
 		return FALSE;
 	}
 
+	return TRUE;*/
+
+	// Now we can choose a pixel format the modern way, using wglChoosePixelFormatARB.
+	int pixel_format_attribs[] = {
+		WGL_DRAW_TO_WINDOW_ARB,     GL_TRUE,
+		WGL_SUPPORT_OPENGL_ARB,     GL_TRUE,
+		WGL_DOUBLE_BUFFER_ARB,      GL_TRUE,
+		WGL_ACCELERATION_ARB,       WGL_FULL_ACCELERATION_ARB,
+		WGL_PIXEL_TYPE_ARB,         WGL_TYPE_RGBA_ARB,
+		WGL_COLOR_BITS_ARB,         32,
+		WGL_DEPTH_BITS_ARB,         24,
+		WGL_STENCIL_BITS_ARB,       8,
+		0
+	};
+
+	int pixel_format;
+	UINT num_formats;
+	wglChoosePixelFormatARB(m_pDC->GetSafeHdc(), pixel_format_attribs, 0, 1, &pixel_format, &num_formats);
+	if (!num_formats) {
+		AfxMessageBox(L"Failed to set the OpenGL 3.3 pixel format.");
+	}
+
+	PIXELFORMATDESCRIPTOR pfd;
+	DescribePixelFormat(m_pDC->GetSafeHdc(), pixel_format, sizeof(pfd), &pfd);
+	if (!SetPixelFormat(m_pDC->GetSafeHdc(), pixel_format, &pfd)) {
+		AfxMessageBox(L"Failed to set the OpenGL 3.3 pixel format.");
+		return FALSE;
+	}
 	return TRUE;
 }
 
