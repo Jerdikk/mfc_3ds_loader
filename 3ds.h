@@ -1,3 +1,15 @@
+//***********************************************************************
+//											
+//		- "Talk to me like I'm a 3 year old!" Programming Lessons -		 
+//                                                                       
+//		$Author:	DigiBen	digiben@gametutorials.com	
+//											
+//		$Program:	3DSLoader		 
+//
+//		$Description:	Demonstrates how to load a .3ds file format		 
+//											
+//***********************************************************************
+
 #ifndef _3DS_H
 #define _3DS_H
 
