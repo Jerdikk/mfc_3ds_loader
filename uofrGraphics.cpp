@@ -13,6 +13,7 @@
 using namespace std;
 #include "uofrGraphics.h"
 
+
 uofrGraphics urgl;
 
 
@@ -866,4 +867,174 @@ void uofrGraphics::drawWireTorus( GLfloat innerRadius, GLfloat outerRadius, GLin
     primitive = GL_LINE_STRIP;
     drawSolidTorus(innerRadius, outerRadius, nSides, nRings);
     primitive = GL_TRIANGLES;
+}
+
+void uofrGraphics::Draw3DS(t3DModel * model)
+{
+	static GLfloat lastSize = 0;
+	static GLuint lastShaderProg;
+
+	/*const vec4 cubeVerts[] =
+	{
+		vec4(0.5, 0.5, 0.5, 1), //0
+		vec4(0.5, 0.5,-0.5, 1), //1
+		vec4(0.5,-0.5, 0.5, 1), //2
+		vec4(0.5,-0.5,-0.5, 1), //3
+		vec4(-0.5, 0.5, 0.5, 1), //4
+		vec4(-0.5, 0.5,-0.5, 1), //5
+		vec4(-0.5,-0.5, 0.5, 1), //6
+		vec4(-0.5,-0.5,-0.5, 1)  //7
+	};*/
+	vec4 *verts;
+	int nVerts = model->pObject[0].numOfVerts;
+	verts = new vec4[nVerts];
+	int i, j;
+	for (i = 0; i < nVerts; i++)
+	{
+		verts[i].x = model->pObject[0].pVerts[i].x;
+		verts[i].y = model->pObject[0].pVerts[i].y;
+		verts[i].z = model->pObject[0].pVerts[i].z;
+		verts[i].w = 1;
+	}
+	
+
+	/*const vec4 verts[] = //36 vertices total
+	{
+		cubeVerts[0], cubeVerts[4], cubeVerts[6],  //front
+		cubeVerts[6], cubeVerts[2], cubeVerts[0],
+		cubeVerts[1], cubeVerts[0], cubeVerts[2],  //right
+		cubeVerts[2], cubeVerts[3], cubeVerts[1],
+		cubeVerts[5], cubeVerts[1], cubeVerts[3],  //back
+		cubeVerts[3], cubeVerts[7], cubeVerts[5],
+		cubeVerts[4], cubeVerts[5], cubeVerts[7],  //left
+		cubeVerts[7], cubeVerts[6], cubeVerts[4],
+		cubeVerts[4], cubeVerts[0], cubeVerts[1],  //top
+		cubeVerts[1], cubeVerts[5], cubeVerts[4],
+		cubeVerts[6], cubeVerts[7], cubeVerts[3],  //bottom
+		cubeVerts[3], cubeVerts[2], cubeVerts[6],
+
+	};*/
+
+
+	/*const vec4 right = vec4(1.0f, 0.0f, 0.0f, 0.0f);
+	const vec4 left = vec4(-1.0f, 0.0f, 0.0f, 0.0f);
+	const vec4 top = vec4(0.0f, 1.0f, 0.0f, 0.0f);
+	const vec4 bottom = vec4(0.0f, -1.0f, 0.0f, 0.0f);
+	const vec4 front = vec4(0.0f, 0.0f, 1.0f, 0.0f);
+	const vec4 back = vec4(0.0f, 0.0f, -1.0f, 0.0f);
+	
+	const vec4 normsArray[] =
+	{
+		front, front, front, front, front, front,
+		right, right, right, right, right, right,
+		back, back, back, back, back, back,
+		left, left, left, left, left, left,
+		top, top, top, top, top, top,
+		bottom, bottom, bottom, bottom, bottom, bottom
+
+	};
+	*/
+
+	vec4 *normsArray;
+
+	int nFaces = model->pObject[0].numOfFaces;
+	normsArray = new vec4[nFaces];
+
+	for (i = 0; i < nVerts; i++)
+	{
+		normsArray[i].x = model->pObject[0].pNormals[i].x;
+		normsArray[i].y = model->pObject[0].pNormals[i].y;
+		normsArray[i].z = model->pObject[0].pNormals[i].z;
+		normsArray[i].w = 0;
+	}
+
+
+	static GLuint cube = 0, buffer = 0;
+
+	//If the shader changed and we've drawn before,
+	//we need to detach from old shader and connect to new.
+	if (lastShaderProg != shaderProgram )
+	{
+		//connect position and normal arrays to shader
+		if (positionAttribLoc != 0XFFFFFFFF)
+		{
+			glEnableVertexAttribArray(positionAttribLoc);
+			glVertexAttribPointer(positionAttribLoc, 4, GL_FLOAT, GL_FALSE, 0,
+				BUFFER_OFFSET(0));
+		}
+
+		if (normalAttribLoc != 0xFFFFFFFF)
+		{
+			glEnableVertexAttribArray(normalAttribLoc);
+			glVertexAttribPointer(normalAttribLoc, 4, GL_FLOAT, GL_FALSE, 0,
+				BUFFER_OFFSET(nVerts * sizeof(vec4)));
+		}
+
+		if (colourAttribLoc != 0xFFFFFFFF)
+		{
+			//set a constant colour
+			glDisableVertexAttribArray(colourAttribLoc);
+			glVertexAttrib4fv(colourAttribLoc, colour);
+		}
+	}
+	lastShaderProg = shaderProgram;
+
+	//Generate a new cube ONLY if necessary - not the same dimesions as last time
+	//if (lastSize != size)
+	{
+		vec4 vertsArray[36];
+		//lastSize = size;
+
+		/*for (int i = 0; i < 36; i++)
+		{
+			vertsArray[i] = verts[i] * size;
+			vertsArray[i].w = 1.0f;
+		}*/
+
+		if (!glIsVertexArray(cube))
+		{
+			glGenVertexArrays(1, &cube);
+		}
+
+		glBindVertexArray(cube);
+
+		if (glIsBuffer(buffer))
+		{
+			glDeleteBuffers(1, &buffer);
+		}
+		glGenBuffers(1, &buffer);
+		glBindBuffer(GL_ARRAY_BUFFER, buffer);
+		glBufferData(GL_ARRAY_BUFFER, (nVerts+ nFaces) * sizeof(vec4) ,
+			NULL, GL_STATIC_DRAW);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, nVerts * sizeof(vec4), vertsArray);
+		glBufferSubData(GL_ARRAY_BUFFER, nVerts * sizeof(vec4), nFaces * sizeof(vec4), normsArray);
+
+		//connect position and normal arrays to shader
+		if (positionAttribLoc != 0XFFFFFFFF)
+		{
+			glEnableVertexAttribArray(positionAttribLoc);
+			glVertexAttribPointer(positionAttribLoc, 4, GL_FLOAT, GL_FALSE, 0,
+				BUFFER_OFFSET(0));
+		}
+
+		if (normalAttribLoc != 0xFFFFFFFF)
+		{
+			glEnableVertexAttribArray(normalAttribLoc);
+			glVertexAttribPointer(normalAttribLoc, 4, GL_FLOAT, GL_FALSE, 0,
+				BUFFER_OFFSET(nVerts * sizeof(vec4)));
+		}
+
+		if (colourAttribLoc != 0xFFFFFFFF)
+		{
+			//set a constant colour
+			glDisableVertexAttribArray(colourAttribLoc);
+		}
+	}
+
+	glBindVertexArray(cube);
+	glVertexAttrib4fv(colourAttribLoc, colour);
+	glDrawArrays(primitive, 0, nVerts);
+
+	delete verts;
+	delete normsArray;
 }

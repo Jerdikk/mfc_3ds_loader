@@ -12,6 +12,7 @@
 #include <iostream>
 #include <cstring>
 #include "Angel.h"
+#include "3ds.h"
 
 class uofrGraphics {
     GLuint shaderProgram;
@@ -37,6 +38,7 @@ public:
     void drawWireCube(GLfloat size);
     void drawSolidTorus( GLfloat innerRadius, GLfloat outerRadius, GLint nSides, GLint nRings);
     void drawWireTorus( GLfloat innerRadius, GLfloat outerRadius, GLint nSides, GLint nRings);
+	void Draw3DS(t3DModel *model);
 };
 
 extern uofrGraphics urgl;

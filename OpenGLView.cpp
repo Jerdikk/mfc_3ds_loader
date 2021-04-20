@@ -85,6 +85,10 @@ BEGIN_MESSAGE_MAP(COpenGLView, CView)
 	ON_WM_DESTROY()
 	ON_WM_SIZE()
 	ON_COMMAND(ID_FILE_OPEN, &COpenGLView::OnFileOpen)
+	ON_WM_MOUSEMOVE()
+	ON_WM_KEYUP()
+	ON_WM_KEYDOWN()
+	ON_WM_LBUTTONDOWN()
 END_MESSAGE_MAP()
 
 //////////////////////////////////////////////////////////////////////////////
@@ -774,11 +778,12 @@ void RenderScene()
 	// Cube is centered around current origin.
 	if (g_3DModel.numOfObjects > 0)
 	{
-		urgl.drawSolidCube(1.0f);
+		urgl.Draw3DS(&g_3DModel);
+		
 	}
 	else
 	{
-		
+		urgl.drawSolidCube(1.0f);
 	}
 		
 }
@@ -855,6 +860,8 @@ void COpenGLView::OnFileOpen()
 
 			*/
 
+
+
 	}
 
 	/*
@@ -891,4 +898,48 @@ void COpenGLView::OnFileOpen()
 	CFileDialog fileDialog(FALSE,"obj","*.obj");
 
 	*/
+
+
+	Draw();
+
+	//Swap buffers to show result
+	if (FALSE == ::SwapBuffers(m_pDC->GetSafeHdc()))
+	{
+		SetError(7);
+	}
+}
+
+
+void COpenGLView::OnMouseMove(UINT nFlags, CPoint point)
+{
+	// TODO: добавьте свой код обработчика сообщений или вызов стандартного
+
+	CView::OnMouseMove(nFlags, point);
+}
+
+
+void COpenGLView::OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags)
+{
+	// TODO: добавьте свой код обработчика сообщений или вызов стандартного
+
+	CView::OnKeyUp(nChar, nRepCnt, nFlags);
+}
+
+
+void COpenGLView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
+{
+	// TODO: добавьте свой код обработчика сообщений или вызов стандартного
+
+	CView::OnKeyDown(nChar, nRepCnt, nFlags);
+}
+
+
+void COpenGLView::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	// TODO: добавьте свой код обработчика сообщений или вызов стандартного
+	RECT bounds;
+	m_pDC->GetWindow()->GetClientRect(&bounds);
+	float x1 = 2*(float)point.x / (float)(bounds.right-bounds.left)-1;
+	float y1 = 1 - 2*(float)point.y / (float)(bounds.bottom-bounds.top);
+	CView::OnLButtonDown(nFlags, point);
 }
