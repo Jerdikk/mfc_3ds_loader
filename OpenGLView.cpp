@@ -11,6 +11,19 @@
 
 #include "OpenGLDoc.h"
 #include "OpenGLView.h"
+#include <GL/glew.h>
+#include <GL/wglew.h>
+#include <GL/freeglut.h>
+#include <GL/freeglut_ext.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include <learnopengl/filesystem.h>
+#include <learnopengl/shader_m.h>
+#include <learnopengl/camera.h>
 #include "3ds.h"
 
 #ifdef _DEBUG
@@ -51,26 +64,58 @@ void Draw(void);
 void PreRenderScene(void);
 void RenderStockScene(void);
 void RenderScene(void);
-void drawSolidSphere(GLfloat radius, GLint slices, GLint stacks);
-void drawSolidCube(GLfloat size);
+//void drawSolidSphere(GLfloat radius, GLint slices, GLint stacks);
+//void drawSolidCube(GLfloat size);
 
 
 //OpenGL State Management
 ////////
-GLuint program1;  //Shader
-GLint uColor;     //Shader color input
-GLint uLightPosition;//Shader light position input
-GLint mvIndex;    //Shader positioning input
-GLint projIndex;     //Shader projection input
-mat4 p, mv;       //Local projection and positioning variables
+//GLuint program1;  //Shader
+//GLint uColor;     //Shader color input
+//GLint uLightPosition;//Shader light position input
+//GLint mvIndex;    //Shader positioning input
+//GLint projIndex;     //Shader projection input
+//mat4 p, mv;       //Local projection and positioning variables
 
 
 				  // Scene Related Functions and Variables
 				  ////////
 
 				  //Model Control Variables
-GLfloat rotY = 0;    //rotate model around y axis
-GLfloat rotX = 0;    //rotate model around x axis
+//GLfloat rotY = 0;    //rotate model around y axis
+//GLfloat rotX = 0;    //rotate model around x axis
+
+// settings
+unsigned int SCR_WIDTH;
+unsigned int SCR_HEIGHT;
+
+// camera
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+float lastX = SCR_WIDTH / 2.0f;
+float lastY = SCR_HEIGHT / 2.0f;
+bool firstMouse = true;
+
+// timing
+float deltaTime = 0.0f;	// time between current frame and last frame
+float lastFrame = 0.0f;
+unsigned int texture1, texture2;
+
+unsigned int shaderProgram;
+unsigned int VBO, VAO;
+Shader ourShader;
+// world space positions of our cubes
+glm::vec3 cubePositions[] = {
+	glm::vec3(0.0f,  0.0f,  0.0f),
+	glm::vec3(2.0f,  5.0f, -15.0f),
+	glm::vec3(-1.5f, -2.2f, -2.5f),
+	glm::vec3(-3.8f, -2.0f, -12.3f),
+	glm::vec3(2.4f, -0.4f, -3.5f),
+	glm::vec3(-1.7f,  3.0f, -7.5f),
+	glm::vec3(1.3f, -2.0f, -2.5f),
+	glm::vec3(1.5f,  2.0f, -2.5f),
+	glm::vec3(1.5f,  0.2f, -1.5f),
+	glm::vec3(-1.3f,  1.0f, -1.5f)
+};
 //////////////////////////////////////////////////////////////////////////////
 //// для OpenGL
 //////////////////////////////////////////////////////////////////////////////
@@ -86,9 +131,8 @@ BEGIN_MESSAGE_MAP(COpenGLView, CView)
 	ON_WM_SIZE()
 	ON_COMMAND(ID_FILE_OPEN, &COpenGLView::OnFileOpen)
 	ON_WM_MOUSEMOVE()
-	ON_WM_KEYUP()
-	ON_WM_KEYDOWN()
 	ON_WM_LBUTTONDOWN()
+	ON_WM_KEYDOWN()
 END_MESSAGE_MAP()
 
 //////////////////////////////////////////////////////////////////////////////
@@ -246,6 +290,9 @@ void COpenGLView::OnDestroy()
 	//////////////////////////////////////////////////////////////////////////////
 	//// для OpenGL
 	//////////////////////////////////////////////////////////////////////////////
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	//glDeleteProgram(shaderProgram);
 
 	if (FALSE == ::wglDeleteContext(m_hRC))
 	{
@@ -640,27 +687,157 @@ BOOL COpenGLView::SetupPixelFormat()
 //        - set an initial camera position
 void InitializeOpenGL()
 {
-	//Set up shader
-	program1 = InitShader("vshader.glsl", "fshader.glsl");
+	// configure global opengl state
+	// -----------------------------
+	glEnable(GL_DEPTH_TEST);
 
-	glUseProgram(program1);
+	// build and compile our shader zprogram
+	// ------------------------------------
+	ourShader.init("7.4.camera.vs", "7.4.camera.fs");
+
+	// set up vertex data (and buffer(s)) and configure vertex attributes
+	// ------------------------------------------------------------------
+	float vertices[] = {
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+	};
+	
+	//unsigned int VBO, VAO;
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	// position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	// texture coord attribute
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+
+	// load and create a texture 
+	// -------------------------
+
+	// texture 1
+	// ---------
+	glGenTextures(1, &texture1);
+	glBindTexture(GL_TEXTURE_2D, texture1);
+	// set the texture wrapping parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	// set texture filtering parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// load image, create texture and generate mipmaps
+	int width, height, nrChannels;
+	stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
+	unsigned char *data = stbi_load(FileSystem::getPath("resources/textures/container.jpg").c_str(), &width, &height, &nrChannels, 0);
+	if (data)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		std::cout << "Failed to load texture" << std::endl;
+	}
+	stbi_image_free(data);
+	// texture 2
+	// ---------
+	glGenTextures(1, &texture2);
+	glBindTexture(GL_TEXTURE_2D, texture2);
+	// set the texture wrapping parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	// set texture filtering parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// load image, create texture and generate mipmaps
+	data = stbi_load(FileSystem::getPath("resources/textures/awesomeface.png").c_str(), &width, &height, &nrChannels, 0);
+	if (data)
+	{
+		// note that the awesomeface.png has transparency and thus an alpha channel, so make sure to tell OpenGL the data type is of GL_RGBA
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		std::cout << "Failed to load texture" << std::endl;
+	}
+	stbi_image_free(data);
+
+	// tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
+	// -------------------------------------------------------------------------------------------
+	ourShader.use();
+	ourShader.setInt("texture1", 0);
+	ourShader.setInt("texture2", 1);
+
+
+
+	//Set up shader
+	//program1 = InitShader("vshader.glsl", "fshader.glsl");
+
+	//glUseProgram(program1);
 
 	//Get locations of transformation matrices from shader
-	mvIndex = glGetUniformLocation(program1, "mv");
-	projIndex = glGetUniformLocation(program1, "p");
+	//mvIndex = glGetUniformLocation(program1, "mv");
+	//projIndex = glGetUniformLocation(program1, "p");
 
 	//Get locations of lighting uniforms from shader
-	uLightPosition = glGetUniformLocation(program1, "lightPosition");
-	uColor = glGetUniformLocation(program1, "uColor");
+	//uLightPosition = glGetUniformLocation(program1, "lightPosition");
+	//uColor = glGetUniformLocation(program1, "uColor");
 
 	//Set default lighting and material properties in shader.
-	glUniform4f(uLightPosition, 0.0f, 0.0f, 10.0f, 0.0f);
-	glUniform3f(uColor, 1.0f, 1.0f, 1.0f);
+	//glUniform4f(uLightPosition, 0.0f, 0.0f, 10.0f, 0.0f);
+	//glUniform3f(uColor, 1.0f, 1.0f, 1.0f);
 
 	//Configure urgl object in uofrGraphics library
-	urgl.connectShader(program1, "vPosition", "vNormal", NULL);
+	//urgl.connectShader(program1, "vPosition", "vNormal", NULL);
 
-	glEnable(GL_DEPTH_TEST);
+	//glEnable(GL_DEPTH_TEST);
 }
 // Function: Draw
 // Purpose:
@@ -683,13 +860,13 @@ void PreRenderScene()
 	// select a default viewing transformation
 	// of a 20 degree rotation about the X axis
 	// then a -5 unit transformation along Z
-	mv = mat4();
-	mv *= Translate(0.0f, 0.0f, -5.0f);
-	mv *= RotateX(20.0f);
+//mv = mat4();
+	//mv *= Translate(0.0f, 0.0f, -5.0f);
+	//mv *= RotateX(20.0f);
 
 	//Allow variable controlled rotation around local x and y axes.
-	mv *= RotateX(rotX);
-	mv *= RotateY(rotY);
+	//mv *= RotateX(rotX);
+	//mv *= RotateY(rotY);
 }
 
 
@@ -702,34 +879,34 @@ void RenderStockScene()
 	const GLfloat delta = 0.5f;
 
 	// define four vertices that make up a square.
-	vec4 v1(0.0f, 0.0f, 0.0f, 1.0f);
-	vec4 v2(0.0f, 0.0f, delta, 1.0f);
-	vec4 v3(delta, 0.0f, delta, 1.0f);
-	vec4 v4(delta, 0.0f, 0.0f, 1.0f);
+	//vec4 v1(0.0f, 0.0f, 0.0f, 1.0f);
+	//vec4 v2(0.0f, 0.0f, delta, 1.0f);
+	//vec4 v3(delta, 0.0f, delta, 1.0f);
+	//vec4 v4(delta, 0.0f, 0.0f, 1.0f);
 
 
 	int color = 0;
 
 	// define the two colors
-	vec3 color1(0.9f, 0.9f, 0.9f);
-	vec3 color2(0.05f, 0.05f, 0.05f);
+	//vec3 color1(0.9f, 0.9f, 0.9f);
+	//vec3 color2(0.05f, 0.05f, 0.05f);
 
-	mat4 placementX = mv;
-	mat4 placementZ;
-	placementX *= Translate(-10.0f * delta, 0.0f, -10.0f * delta);
-	for (int x = -10; x <= 10; x++)
-	{
-		placementZ = placementX;
-		for (int z = -10; z <= 10; z++)
-		{
-			glUniform3fv(uColor, 1, (color++) % 2 ? color1 : color2);
-			glUniformMatrix4fv(mvIndex, 1, GL_TRUE, placementZ);
-			urgl.drawQuad(v1, v2, v3, v4);
-			placementZ *= Translate(0.0f, 0.0f, delta);
-		}
-		placementX *= Translate(delta, 0.0f, 0.0f);
+	//mat4 placementX = mv;
+	//mat4 placementZ;
+	//placementX *= Translate(-10.0f * delta, 0.0f, -10.0f * delta);
+	//for (int x = -10; x <= 10; x++)
+	//{
+	//	placementZ = placementX;
+	//	for (int z = -10; z <= 10; z++)
+	//	{
+	//		glUniform3fv(uColor, 1, (color++) % 2 ? color1 : color2);
+	//		glUniformMatrix4fv(mvIndex, 1, GL_TRUE, placementZ);
+	//		urgl.drawQuad(v1, v2, v3, v4);
+	//		placementZ *= Translate(0.0f, 0.0f, delta);
+	//	}
+	//	placementX *= Translate(delta, 0.0f, 0.0f);
 
-	}
+	//}
 }
 
 // Function: RenderScene
@@ -737,54 +914,98 @@ void RenderStockScene()
 //     Your playground. Code additional scene details here.
 void RenderScene()
 {
-	// draw a red sphere inside a light blue cube
+	// render
+	   // ------
+	CTime t = CTime::GetTickCount();	
+	float currentFrame = t.GetTime();
+	deltaTime = currentFrame - lastFrame;
+	lastFrame = currentFrame;
+
+	// input
+	// -----
+	//processInput(window);
+
+	// render
+	// ------
+	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// bind textures on corresponding texture units
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture1);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, texture2);
+
+	// activate shader
+	ourShader.use();
+
+	// pass projection matrix to shader (note that in this case it could change every frame)
+	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+	ourShader.setMat4("projection", projection);
+
+	// camera/view transformation
+	glm::mat4 view = camera.GetViewMatrix();
+	ourShader.setMat4("view", view);
+
+	// render boxes
+	glBindVertexArray(VAO);
+	for (unsigned int i = 0; i < 10; i++)
+	{
+		// calculate the model matrix for each object and pass it to shader before drawing
+		glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
+		model = glm::translate(model, cubePositions[i]);
+		float angle = 20.0f * i;
+		model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+		ourShader.setMat4("model", model);
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
 
 	// Set the drawing color to red
 	// Arguments are Red, Green, Blue
-	glUniform3f(uColor, 1.0f, 0.0f, 0.0f);
+	//glUniform3f(uColor, 1.0f, 0.0f, 0.0f);
 
 	// Move the "drawing space" up by the sphere's radius
 	// so the sphere is on top of the checkerboard
 	// mv is a transformation matrix. It accumulates transformations through
 	// right side matrix multiplication.
-	mv *= Translate(0.0f, 0.5f, 0.0f);
+	//mv *= Translate(0.0f, 0.5f, 0.0f);
 
 	// Rotate drawing space by 90 degrees around X so the sphere's poles
 	// are vertical
-	mv *= RotateX(90.0f);
+	//mv *= RotateX(90.0f);
 
 	//Send the transformation matrix to the shader
-	glUniformMatrix4fv(mvIndex, 1, GL_TRUE, mv);
+	//glUniformMatrix4fv(mvIndex, 1, GL_TRUE, mv);
 
 	// Draw a sphere.
 	// Arguments are Radius, Slices, Stacks
 	// Sphere is centered around current origin.
-	urgl.drawSolidSphere(0.5f, 20, 20);
+	//urgl.drawSolidSphere(0.5f, 20, 20);
 
 
 	// when we rotated the sphere earlier, we rotated drawing space
 	// and created a new "frame"
 	// to move the cube up or down we now have to refer to the z-axis
-	mv *= Translate(0.0f, 0.0f, 0.5f);
+	//mv *= Translate(0.0f, 0.0f, 0.5f);
 
 	//Send the transformation matrix to the shader
-	glUniformMatrix4fv(mvIndex, 1, GL_TRUE, mv);
+	//glUniformMatrix4fv(mvIndex, 1, GL_TRUE, mv);
 
 	// set the drawing color to light blue
-	glUniform3f(uColor, 0.5f, 0.5f, 1.0f);
+	//glUniform3f(uColor, 0.5f, 0.5f, 1.0f);
 
 	// Draw the cube.
 	// Argument refers to length of side of cube.
 	// Cube is centered around current origin.
-	if (g_3DModel.numOfObjects > 0)
-	{
-		urgl.Draw3DS(&g_3DModel);
+	//if (g_3DModel.numOfObjects > 0)
+	//{
+	//	urgl.drawSolidCube(1.0f);
+	//}
+	//else
+	//{
 		
-	}
-	else
-	{
-		urgl.drawSolidCube(1.0f);
-	}
+	//}
 		
 }
 
@@ -803,6 +1024,7 @@ bool ChangeSize(int w, int h)
 		return false;
 	}
 
+
 	// tell OpenGL to render to whole window area
 	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
 
@@ -811,11 +1033,16 @@ bool ChangeSize(int w, int h)
 	// the window is resized
 	aspect_ratio = (GLdouble)w / (GLdouble)h;
 
+	lastX = w / 2.0f;
+	lastY = h / 2.0f;
+
+	SCR_WIDTH=w;
+	SCR_HEIGHT=h;
 	// calculate a new projection matrix
-	p = Perspective(50.0f, aspect_ratio, 0.5f, 20.0f);
+	//p = Perspective(50.0f, aspect_ratio, 0.5f, 20.0f);
 
 	// send the projection to the shader
-	glUniformMatrix4fv(projIndex, 1, GL_TRUE, p);
+	//glUniformMatrix4fv(projIndex, 1, GL_TRUE, p);
 
 	return true;
 }
@@ -860,8 +1087,6 @@ void COpenGLView::OnFileOpen()
 
 			*/
 
-
-
 	}
 
 	/*
@@ -898,8 +1123,27 @@ void COpenGLView::OnFileOpen()
 	CFileDialog fileDialog(FALSE,"obj","*.obj");
 
 	*/
+}
 
 
+void COpenGLView::OnMouseMove(UINT nFlags, CPoint point)
+{
+	// TODO: добавьте свой код обработчика сообщений или вызов стандартного
+	if (firstMouse)
+	{
+		lastX = point.x;
+		lastY = point.y;
+		firstMouse = false;
+	}
+
+	float xoffset = point.x - lastX;
+	float yoffset = lastY - point.y; // reversed since y-coordinates go from bottom to top
+
+	lastX = point.x;
+	lastY = point.y;
+
+	camera.ProcessMouseMovement(xoffset, yoffset);
+	CView::OnMouseMove(nFlags, point);
 	Draw();
 
 	//Swap buffers to show result
@@ -907,39 +1151,36 @@ void COpenGLView::OnFileOpen()
 	{
 		SetError(7);
 	}
-}
 
-
-void COpenGLView::OnMouseMove(UINT nFlags, CPoint point)
-{
-	// TODO: добавьте свой код обработчика сообщений или вызов стандартного
-
-	CView::OnMouseMove(nFlags, point);
-}
-
-
-void COpenGLView::OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags)
-{
-	// TODO: добавьте свой код обработчика сообщений или вызов стандартного
-
-	CView::OnKeyUp(nChar, nRepCnt, nFlags);
-}
-
-
-void COpenGLView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
-{
-	// TODO: добавьте свой код обработчика сообщений или вызов стандартного
-
-	CView::OnKeyDown(nChar, nRepCnt, nFlags);
 }
 
 
 void COpenGLView::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	// TODO: добавьте свой код обработчика сообщений или вызов стандартного
-	RECT bounds;
-	m_pDC->GetWindow()->GetClientRect(&bounds);
-	float x1 = 2*(float)point.x / (float)(bounds.right-bounds.left)-1;
-	float y1 = 1 - 2*(float)point.y / (float)(bounds.bottom-bounds.top);
+
 	CView::OnLButtonDown(nFlags, point);
+}
+
+
+void COpenGLView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
+{
+	// TODO: добавьте свой код обработчика сообщений или вызов стандартного
+	if (nChar == 87)
+		camera.ProcessKeyboard(FORWARD, 1);
+	if (nChar == 83)
+		camera.ProcessKeyboard(BACKWARD, 1);
+	if (nChar == 65)
+		camera.ProcessKeyboard(LEFT, 1);
+	if (nChar == 68)
+		camera.ProcessKeyboard(RIGHT, 1);
+		
+	CView::OnKeyDown(nChar, nRepCnt, nFlags);
+	Draw();
+
+	//Swap buffers to show result
+	if (FALSE == ::SwapBuffers(m_pDC->GetSafeHdc()))
+	{
+		SetError(7);
+	}
 }

@@ -13,12 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Source Files\1">
-      <UniqueIdentifier>{ccf28c38-bbfb-4649-8033-0edfa679453e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\1">
-      <UniqueIdentifier>{9ac62a69-a033-4a36-af5c-4cb9570d0951}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -45,21 +39,6 @@
     <ClInclude Include="Resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="uofrGraphics.h">
-      <Filter>Header Files\1</Filter>
-    </ClInclude>
-    <ClInclude Include="Angel.h">
-      <Filter>Header Files\1</Filter>
-    </ClInclude>
-    <ClInclude Include="mat.h">
-      <Filter>Header Files\1</Filter>
-    </ClInclude>
-    <ClInclude Include="CheckError.h">
-      <Filter>Header Files\1</Filter>
-    </ClInclude>
-    <ClInclude Include="vec.h">
-      <Filter>Header Files\1</Filter>
-    </ClInclude>
     <ClInclude Include="3ds.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -79,12 +58,6 @@
     </ClCompile>
     <ClCompile Include="OpenGLView.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="uofrGraphics.cpp">
-      <Filter>Source Files\1</Filter>
-    </ClCompile>
-    <ClCompile Include="InitShader.cpp">
-      <Filter>Source Files\1</Filter>
     </ClCompile>
     <ClCompile Include="3ds.cpp">
       <Filter>Source Files</Filter>
