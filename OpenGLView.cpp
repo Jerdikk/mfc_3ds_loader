@@ -24,6 +24,7 @@
 #include <learnopengl/filesystem.h>
 #include <learnopengl/shader_m.h>
 #include <learnopengl/camera.h>
+//#include <learnopengl/model.h>
 #include "3ds.h"
 
 #ifdef _DEBUG
@@ -102,7 +103,11 @@ unsigned int texture1, texture2;
 
 unsigned int shaderProgram;
 unsigned int VBO, VAO;
+unsigned int VBO1, VAO1;
 Shader ourShader;
+Shader modelShader;
+//Model ourModel;
+
 // world space positions of our cubes
 glm::vec3 cubePositions[] = {
 	glm::vec3(0.0f,  0.0f,  0.0f),
@@ -694,6 +699,7 @@ void InitializeOpenGL()
 	// build and compile our shader zprogram
 	// ------------------------------------
 	ourShader.init("7.4.camera.vs", "7.4.camera.fs");
+	modelShader.init("1.model_loading.vs", "1.model_loading.fs");
 
 	// set up vertex data (and buffer(s)) and configure vertex attributes
 	// ------------------------------------------------------------------
@@ -960,6 +966,22 @@ void RenderScene()
 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
+	
+
+	modelShader.use();
+
+	// view/projection transformations
+	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+	glm::mat4 view = camera.GetViewMatrix();
+	modelShader.setMat4("projection", projection);
+	modelShader.setMat4("view", view);
+
+	// render the loaded model
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+	model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
+	modelShader.setMat4("model", model);
+	ourModel.Draw(ourShader);
 
 	// Set the drawing color to red
 	// Arguments are Red, Green, Blue
@@ -1064,6 +1086,10 @@ void COpenGLView::OnFileOpen()
 	// our t3DModel structure and the file name string we want to load ("face.3ds").
 
 		g_Load3ds.Import3DS(&g_3DModel, (const WCHAR *)fileDialog.GetPathName());			// Load our .3DS file into our model structure
+
+
+
+
 		/*
 		// Depending on how many textures we found, load each one (Assuming .BMP)
 		// If you want to load other files than bitmaps, you will need to adjust CreateTexture().
