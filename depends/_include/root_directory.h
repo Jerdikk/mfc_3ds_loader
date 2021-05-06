@@ -1,1 +1,1 @@
-const char * logl_root = "E:/my/mfc_3ds_loader";
+const char * logl_root = "d:/my/mfc_3ds_loader";

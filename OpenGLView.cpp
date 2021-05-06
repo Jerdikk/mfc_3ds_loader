@@ -104,22 +104,24 @@ unsigned int texture1, texture2;
 unsigned int shaderProgram;
 unsigned int VBO, VAO;
 unsigned int VBO1, VAO1;
+int numindices;
+GLuint elementbuffer;
 Shader ourShader;
 Shader modelShader;
 //Model ourModel;
 
 // world space positions of our cubes
 glm::vec3 cubePositions[] = {
-	glm::vec3(0.0f,  0.0f,  0.0f),
-	glm::vec3(2.0f,  5.0f, -15.0f),
-	glm::vec3(-1.5f, -2.2f, -2.5f),
-	glm::vec3(-3.8f, -2.0f, -12.3f),
-	glm::vec3(2.4f, -0.4f, -3.5f),
-	glm::vec3(-1.7f,  3.0f, -7.5f),
-	glm::vec3(1.3f, -2.0f, -2.5f),
-	glm::vec3(1.5f,  2.0f, -2.5f),
-	glm::vec3(1.5f,  0.2f, -1.5f),
-	glm::vec3(-1.3f,  1.0f, -1.5f)
+	glm::vec3(0.0f,  0.0f,  -8.0f),
+	glm::vec3(1.0f,  0.0f, -8.0f),
+	glm::vec3(2.0f, 0.0f, -8.0f),
+	glm::vec3(3.0f, 0.0f, -8.0f),
+	glm::vec3(0.0f, 1.0f, -8.0f),
+	glm::vec3(1.0f,  1.0f, -8.0f),
+	glm::vec3(2.0f, 1.0f, -8.0f),
+	glm::vec3(0.0f,  2.0f, -8.0f),
+	glm::vec3(1.0f,  2.0f, -8.0f),
+	glm::vec3(2.0f,  2.0f, -8.0f)
 };
 //////////////////////////////////////////////////////////////////////////////
 //// для OpenGL
@@ -423,60 +425,6 @@ BOOL COpenGLView::GetOldStyleRenderingContext()
 {
 	//A generic pixel format descriptor. This will be replaced with a more
 	//specific and modern one later, so don't worry about it too much.
-/*	static PIXELFORMATDESCRIPTOR pfd =
-	{
-		sizeof(PIXELFORMATDESCRIPTOR),
-		1,
-		PFD_DRAW_TO_WINDOW |            // support window
-		PFD_SUPPORT_OPENGL |            // support OpenGL
-		PFD_DOUBLEBUFFER,               // double buffered
-		PFD_TYPE_RGBA,                  // RGBA type
-		32,                             // 32-bit color depth
-		0, 0, 0, 0, 0, 0,               // color bits ignored
-		0,                              // no alpha buffer
-		0,                              // shift bit ignored
-		0,                              // no accumulation buffer
-		0, 0, 0, 0,                     // accum bits ignored
-		24,                        // 24-bit z-buffer
-		0,                              // no stencil buffer
-		0,                              // no auxiliary buffer
-		PFD_MAIN_PLANE,                 // main layer
-		0,                              // reserved
-		0, 0, 0                         // layer masks ignored
-	};
-
-	// Get the id number for the best match supported by the hardware device context
-	// to what is described in pfd
-	int pixelFormat = ChoosePixelFormat(m_pDC->GetSafeHdc(), &pfd);
-
-	//If there's no match, report an error
-	if (0 == pixelFormat)
-	{
-		SetError(2);
-		return FALSE;
-	}
-
-	//If there is an acceptable match, set it as the current 
-	if (FALSE == SetPixelFormat(m_pDC->GetSafeHdc(), pixelFormat, &pfd))
-	{
-		SetError(3);
-		return FALSE;
-	}
-
-	//Create a context with this pixel format
-	if (0 == (m_hRC = wglCreateContext(m_pDC->GetSafeHdc())))
-	{
-		SetError(4);
-		return FALSE;
-	}
-
-	//Make it current. Now we're ready to get extended features.
-	if (FALSE == wglMakeCurrent(m_pDC->GetSafeHdc(), m_hRC))
-	{
-		SetError(5);
-		return FALSE;
-	}
-	return TRUE;*/
 
 	WNDCLASSA window_class;// = {
 	ZeroMemory(&window_class, sizeof(WNDCLASSA));
@@ -546,11 +494,6 @@ BOOL COpenGLView::GetOldStyleRenderingContext()
 		return FALSE;
 	}
 
-	//wglCreateContextAttribsARB = (wglCreateContextAttribsARB_type*)wglGetProcAddress(
-	//	"wglCreateContextAttribsARB");
-	//wglChoosePixelFormatARB = (wglChoosePixelFormatARB_type*)wglGetProcAddress(
-	//	"wglChoosePixelFormatARB");
-
 
 	//Get access to modern OpenGL functionality from this old style context.
 	glewExperimental = GL_TRUE;
@@ -573,83 +516,6 @@ BOOL COpenGLView::SetupPixelFormat()
 	//This is a modern pixel format attribute list.
 	//It has an extensible structure. Just add in more argument pairs 
 	//befroe the null to request more features.
-	/*
-	const int attribList[] =
-	{
-		WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
-		WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
-		WGL_ACCELERATION_ARB,   WGL_FULL_ACCELERATION_ARB,
-		WGL_DOUBLE_BUFFER_ARB,  GL_TRUE,
-		WGL_PIXEL_TYPE_ARB,     WGL_TYPE_RGBA_ARB,
-		WGL_COLOR_BITS_ARB,     32,
-		WGL_DEPTH_BITS_ARB,     24,
-		WGL_STENCIL_BITS_ARB,   8,
-		0, 0  //End
-	};
-
-
-	unsigned int numFormats;
-	int pixelFormat;
-	PIXELFORMATDESCRIPTOR pfd;
-
-	//Select a pixel format number
-	wglChoosePixelFormatARB(m_pDC->GetSafeHdc(), attribList, NULL, 1, &pixelFormat, &numFormats);
-
-	*/
-
-	/*const int attribList[] =
-	{
-		WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
-		WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
-		WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
-		WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
-		WGL_COLOR_BITS_ARB, 32,
-		WGL_DEPTH_BITS_ARB, 24,
-		WGL_STENCIL_BITS_ARB, 8,
-		0, // End
-	};
-
-	int pixelFormat;
-	UINT numFormats;	
-	PIXELFORMATDESCRIPTOR pfd =
-	{
-		sizeof(PIXELFORMATDESCRIPTOR),
-		1,
-		PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    //Flags
-		PFD_TYPE_RGBA,        // The kind of framebuffer. RGBA or palette.
-		32,                   // Colordepth of the framebuffer.
-		0, 0, 0, 0, 0, 0,
-		0,
-		0,
-		0,
-		0, 0, 0, 0,
-		24,                   // Number of bits for the depthbuffer
-		8,                    // Number of bits for the stencilbuffer
-		0,                    // Number of Aux buffers in the framebuffer.
-		PFD_MAIN_PLANE,
-		0,
-		0, 0, 0
-	};
-
-	int ttt = wglChoosePixelFormatARB(m_pDC->GetSafeHdc(), attribList, NULL, 1, &pixelFormat, &numFormats);
-
-
-	//Optional: Get the pixel format's description. We must provide a 
-	//description to SetPixelFormat(), but its contents mean little.
-	//According to MSDN: 
-	//  The system's metafile component uses this structure to record the logical
-	//  pixel format specification. The structure has no other effect upon the
-	//  behavior of the SetPixelFormat function.
-	//DescribePixelFormat(m_pDC->GetSafeHdc(), pixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
-
-	//Set it as the current 
-	if (FALSE == SetPixelFormat(m_pDC->GetSafeHdc(), pixelFormat, &pfd))
-	{
-		SetError(3);
-		return FALSE;
-	}
-
-	return TRUE;*/
 
 	// Now we can choose a pixel format the modern way, using wglChoosePixelFormatARB.
 	int pixel_format_attribs[] = {
@@ -820,30 +686,9 @@ void InitializeOpenGL()
 	ourShader.use();
 	ourShader.setInt("texture1", 0);
 	ourShader.setInt("texture2", 1);
+	modelShader.use();
+	ourShader.setInt("texture_diffuse1", 0);
 
-
-
-	//Set up shader
-	//program1 = InitShader("vshader.glsl", "fshader.glsl");
-
-	//glUseProgram(program1);
-
-	//Get locations of transformation matrices from shader
-	//mvIndex = glGetUniformLocation(program1, "mv");
-	//projIndex = glGetUniformLocation(program1, "p");
-
-	//Get locations of lighting uniforms from shader
-	//uLightPosition = glGetUniformLocation(program1, "lightPosition");
-	//uColor = glGetUniformLocation(program1, "uColor");
-
-	//Set default lighting and material properties in shader.
-	//glUniform4f(uLightPosition, 0.0f, 0.0f, 10.0f, 0.0f);
-	//glUniform3f(uColor, 1.0f, 1.0f, 1.0f);
-
-	//Configure urgl object in uofrGraphics library
-	//urgl.connectShader(program1, "vPosition", "vNormal", NULL);
-
-	//glEnable(GL_DEPTH_TEST);
 }
 // Function: Draw
 // Purpose:
@@ -937,8 +782,8 @@ void RenderScene()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// bind textures on corresponding texture units
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture1);
+//	glActiveTexture(GL_TEXTURE0);
+//	glBindTexture(GL_TEXTURE_2D, texture1);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, texture2);
 
@@ -961,73 +806,44 @@ void RenderScene()
 		glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
 		model = glm::translate(model, cubePositions[i]);
 		float angle = 20.0f * i;
-		model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+		//model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 		ourShader.setMat4("model", model);
 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
 	
 
-	modelShader.use();
 
-	// view/projection transformations
-	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-	glm::mat4 view = camera.GetViewMatrix();
-	modelShader.setMat4("projection", projection);
-	modelShader.setMat4("view", view);
+	if (g_3DModel.numOfObjects>0)
+	{
+		modelShader.use();
 
-	// render the loaded model
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-	model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
-	modelShader.setMat4("model", model);
-	ourModel.Draw(ourShader);
+		// view/projection transformations
+		//glm::mat4 projection1 = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		//glm::mat4 view1 = camera.GetViewMatrix();
+		modelShader.setMat4("projection", projection);
+		modelShader.setMat4("view", view);
 
-	// Set the drawing color to red
-	// Arguments are Red, Green, Blue
-	//glUniform3f(uColor, 1.0f, 0.0f, 0.0f);
+		// render the loaded model
+		glm::mat4 model1 = glm::mat4(1.0f);
+		model1 = glm::translate(model1, glm::vec3(0.0f, 0.0f, -3.0f)); // translate it down so it's at the center of the scene
+		model1 = glm::scale(model1, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
+		modelShader.setMat4("model", model1);
 
-	// Move the "drawing space" up by the sphere's radius
-	// so the sphere is on top of the checkerboard
-	// mv is a transformation matrix. It accumulates transformations through
-	// right side matrix multiplication.
-	//mv *= Translate(0.0f, 0.5f, 0.0f);
+		glBindVertexArray(VAO1);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
 
-	// Rotate drawing space by 90 degrees around X so the sphere's poles
-	// are vertical
-	//mv *= RotateX(90.0f);
+		// Draw the triangles !
+		glDrawElements(
+			GL_TRIANGLES,      // mode
+			numindices,    // count
+			GL_UNSIGNED_INT,   // type
+			(void*)0           // element array buffer offset
+		);
+	}
+/*	ourModel.Draw(ourShader);
+*/
 
-	//Send the transformation matrix to the shader
-	//glUniformMatrix4fv(mvIndex, 1, GL_TRUE, mv);
-
-	// Draw a sphere.
-	// Arguments are Radius, Slices, Stacks
-	// Sphere is centered around current origin.
-	//urgl.drawSolidSphere(0.5f, 20, 20);
-
-
-	// when we rotated the sphere earlier, we rotated drawing space
-	// and created a new "frame"
-	// to move the cube up or down we now have to refer to the z-axis
-	//mv *= Translate(0.0f, 0.0f, 0.5f);
-
-	//Send the transformation matrix to the shader
-	//glUniformMatrix4fv(mvIndex, 1, GL_TRUE, mv);
-
-	// set the drawing color to light blue
-	//glUniform3f(uColor, 0.5f, 0.5f, 1.0f);
-
-	// Draw the cube.
-	// Argument refers to length of side of cube.
-	// Cube is centered around current origin.
-	//if (g_3DModel.numOfObjects > 0)
-	//{
-	//	urgl.drawSolidCube(1.0f);
-	//}
-	//else
-	//{
-		
-	//}
 		
 }
 
@@ -1087,7 +903,68 @@ void COpenGLView::OnFileOpen()
 
 		g_Load3ds.Import3DS(&g_3DModel, (const WCHAR *)fileDialog.GetPathName());			// Load our .3DS file into our model structure
 
+		glGenVertexArrays(1, &VAO1);
+		glGenBuffers(1, &VBO1);
 
+		glBindVertexArray(VAO1);
+		float* vertices;
+		int numvert = g_3DModel.pObject[0].numOfVerts;
+		vertices = new float[8 * numvert];
+		int inner_count = 0;
+		for (int yy = 0; yy < numvert; yy++)
+		{
+			vertices[inner_count] = g_3DModel.pObject[0].pVerts[yy].x;
+			inner_count++;
+			vertices[inner_count] = g_3DModel.pObject[0].pVerts[yy].y;
+			inner_count++;
+			vertices[inner_count] = g_3DModel.pObject[0].pVerts[yy].z;
+			inner_count++;
+			vertices[inner_count] = g_3DModel.pObject[0].pNormals[yy].x;
+			inner_count++;
+			vertices[inner_count] = g_3DModel.pObject[0].pNormals[yy].y;
+			inner_count++;
+			vertices[inner_count] = g_3DModel.pObject[0].pNormals[yy].z;
+			inner_count++;
+			vertices[inner_count] = g_3DModel.pObject[0].pTexVerts[yy].x;
+			inner_count++;
+			vertices[inner_count] = g_3DModel.pObject[0].pTexVerts[yy].y;
+			inner_count++;
+		}
+
+		glBindBuffer(GL_ARRAY_BUFFER, VBO1);
+		glBufferData(GL_ARRAY_BUFFER, 8 * numvert*sizeof(float), vertices, GL_STATIC_DRAW);
+
+		// position attribute
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+		// normal
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
+
+		// texture coord attribute
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+		glEnableVertexAttribArray(2);
+
+		unsigned int *indices;
+		numindices = g_3DModel.pObject[0].numOfFaces;
+		indices = new unsigned int[numindices*3];
+		// fill "indices" as needed
+		inner_count = 0;
+		for (int yy = 0; yy < numvert; yy++)
+		{
+			indices[inner_count] = g_3DModel.pObject[0].pFaces[yy].vertIndex[0];
+			inner_count++;
+			indices[inner_count] = g_3DModel.pObject[0].pFaces[yy].vertIndex[1];
+			inner_count++;
+			indices[inner_count] = g_3DModel.pObject[0].pFaces[yy].vertIndex[2];
+			inner_count++;
+
+		}
+		// Generate a buffer for the indices
+		
+		glGenBuffers(1, &elementbuffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3*numindices * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
 
 
 		/*
