@@ -99,7 +99,7 @@ bool firstMouse = true;
 // timing
 float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
-unsigned int texture1, texture2;
+unsigned int texture1, texture2, texture3;
 
 unsigned int shaderProgram;
 unsigned int VBO, VAO;
@@ -108,6 +108,7 @@ int numindices;
 GLuint elementbuffer;
 Shader ourShader;
 Shader modelShader;
+int numvert;
 //Model ourModel;
 
 // world space positions of our cubes
@@ -299,6 +300,12 @@ void COpenGLView::OnDestroy()
 	//////////////////////////////////////////////////////////////////////////////
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
+	if (g_3DModel.numOfObjects > 0)
+	{
+		glDeleteVertexArrays(1, &VAO1);
+		glDeleteBuffers(1, &VBO1);
+		glDeleteBuffers(1,&elementbuffer);
+	}
 	//glDeleteProgram(shaderProgram);
 
 	if (FALSE == ::wglDeleteContext(m_hRC))
@@ -686,8 +693,8 @@ void InitializeOpenGL()
 	ourShader.use();
 	ourShader.setInt("texture1", 0);
 	ourShader.setInt("texture2", 1);
-	modelShader.use();
-	ourShader.setInt("texture_diffuse1", 0);
+	//modelShader.use();
+	//ourShader.setInt("texture_diffuse1", 0);
 
 }
 // Function: Draw
@@ -782,8 +789,8 @@ void RenderScene()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// bind textures on corresponding texture units
-//	glActiveTexture(GL_TEXTURE0);
-//	glBindTexture(GL_TEXTURE_2D, texture1);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture1);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, texture2);
 
@@ -811,11 +818,13 @@ void RenderScene()
 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
-	
+	glBindVertexArray(0);
 
 
 	if (g_3DModel.numOfObjects>0)
 	{
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture3);
 		modelShader.use();
 
 		// view/projection transformations
@@ -836,10 +845,12 @@ void RenderScene()
 		// Draw the triangles !
 		glDrawElements(
 			GL_TRIANGLES,      // mode
-			numindices,    // count
+			numindices*3,    // count
+			//numvert*3,
 			GL_UNSIGNED_INT,   // type
 			(void*)0           // element array buffer offset
 		);
+		glBindVertexArray(0);
 	}
 /*	ourModel.Draw(ourShader);
 */
@@ -908,7 +919,7 @@ void COpenGLView::OnFileOpen()
 
 		glBindVertexArray(VAO1);
 		float* vertices;
-		int numvert = g_3DModel.pObject[0].numOfVerts;
+		numvert = g_3DModel.pObject[0].numOfVerts;
 		vertices = new float[8 * numvert];
 		int inner_count = 0;
 		for (int yy = 0; yy < numvert; yy++)
@@ -950,7 +961,7 @@ void COpenGLView::OnFileOpen()
 		indices = new unsigned int[numindices*3];
 		// fill "indices" as needed
 		inner_count = 0;
-		for (int yy = 0; yy < numvert; yy++)
+		for (int yy = 0; yy < numindices; yy++)
 		{
 			indices[inner_count] = g_3DModel.pObject[0].pFaces[yy].vertIndex[0];
 			inner_count++;
@@ -966,30 +977,61 @@ void COpenGLView::OnFileOpen()
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3*numindices * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
 
-
-		/*
+		delete indices;
+		delete vertices;
+		
 		// Depending on how many textures we found, load each one (Assuming .BMP)
 		// If you want to load other files than bitmaps, you will need to adjust CreateTexture().
 		// Below, we go through all of the materials and check if they have a texture map to load.
 		// Otherwise, the material just holds the color information and we don't need to load a texture.
+		int width, height, nrChannels;
+		stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
+		unsigned char *data;
 
 		// Go through all the materials
-		for(int i = 0; i < g_3DModel.numOfMaterials; i++)
+		//for(int i = 0; i < g_3DModel.numOfMaterials; i++)
 		{
 			// Check to see if there is a file name to load in this material
-			if(strlen(g_3DModel.pMaterials[i].strFile) > 0)
+			if(strlen(g_3DModel.pMaterials[0].strFile) > 0)
 			{
+				glGenTextures(1, &texture3);
+				glBindTexture(GL_TEXTURE_2D, texture3);
+				// set the texture wrapping parameters
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+				// set texture filtering parameters
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				// load image, create texture and generate mipmaps
+				data = stbi_load(g_3DModel.pMaterials[0].strFile, &width, &height, &nrChannels, 0);
+				if (data)
+				{
+					// note that the awesomeface.png has transparency and thus an alpha channel, so make sure to tell OpenGL the data type is of GL_RGBA
+					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+					glGenerateMipmap(GL_TEXTURE_2D);
+				}
+				else
+				{
+					std::cout << "Failed to load texture" << std::endl;
+				}
+				stbi_image_free(data);
+
 				// Use the name of the texture file to load the bitmap, with a texture ID (i).
 				// We pass in our global texture array, the name of the texture, and an ID to reference it.
-				CreateTexture(g_3DModel.pMaterials[i].strFile, g_Texture[i]);
+				//CreateTexture(g_3DModel.pMaterials[0].strFile, g_Texture[i]);
 			}
 
 			// Set the texture ID for this material
-			g_3DModel.pMaterials[i].texureId = i;
+			//g_3DModel.pMaterials[i].texureId = i;
 		}
 
-			*/
 
+
+		// tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
+		// -------------------------------------------------------------------------------------------
+
+		modelShader.use();
+		ourShader.setInt("texture_diffuse1", texture3);
 	}
 
 	/*
