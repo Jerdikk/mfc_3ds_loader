@@ -304,7 +304,7 @@ void COpenGLView::OnDestroy()
 	{
 		glDeleteVertexArrays(1, &VAO1);
 		glDeleteBuffers(1, &VBO1);
-		glDeleteBuffers(1,&elementbuffer);
+		glDeleteBuffers(1, &elementbuffer);
 	}
 	//glDeleteProgram(shaderProgram);
 
@@ -411,8 +411,8 @@ BOOL COpenGLView::GetRenderingContext()
 			return FALSE;
 		}
 
-	//	if (!wglMakeCurrent(NULL, NULL))
-	//		wglDeleteContext(oldContext);
+		//	if (!wglMakeCurrent(NULL, NULL))
+		//		wglDeleteContext(oldContext);
 		if (FALSE == wglMakeCurrent(m_pDC->GetSafeHdc(), m_hRC))
 		{
 			SetError(5);
@@ -470,14 +470,14 @@ BOOL COpenGLView::GetOldStyleRenderingContext()
 	PIXELFORMATDESCRIPTOR pfd;// = {
 	ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
 	pfd.nSize = sizeof(pfd);
-		pfd.nVersion = 1;
-		pfd.iPixelType = PFD_TYPE_RGBA;
-		pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-			pfd.cColorBits = 32; 
-			pfd.cAlphaBits = 8;
-			pfd.iLayerType = PFD_MAIN_PLANE;
-			pfd.cDepthBits = 24;
-			pfd.cStencilBits = 8;
+	pfd.nVersion = 1;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.cColorBits = 32;
+	pfd.cAlphaBits = 8;
+	pfd.iLayerType = PFD_MAIN_PLANE;
+	pfd.cDepthBits = 24;
+	pfd.cStencilBits = 8;
 	//};
 
 	int pixel_format = ChoosePixelFormat(dummy_dc, &pfd);
@@ -619,7 +619,7 @@ void InitializeOpenGL()
 		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
 		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 	};
-	
+
 	//unsigned int VBO, VAO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
@@ -736,35 +736,8 @@ void RenderStockScene()
 {
 	const GLfloat delta = 0.5f;
 
-	// define four vertices that make up a square.
-	//vec4 v1(0.0f, 0.0f, 0.0f, 1.0f);
-	//vec4 v2(0.0f, 0.0f, delta, 1.0f);
-	//vec4 v3(delta, 0.0f, delta, 1.0f);
-	//vec4 v4(delta, 0.0f, 0.0f, 1.0f);
-
-
 	int color = 0;
 
-	// define the two colors
-	//vec3 color1(0.9f, 0.9f, 0.9f);
-	//vec3 color2(0.05f, 0.05f, 0.05f);
-
-	//mat4 placementX = mv;
-	//mat4 placementZ;
-	//placementX *= Translate(-10.0f * delta, 0.0f, -10.0f * delta);
-	//for (int x = -10; x <= 10; x++)
-	//{
-	//	placementZ = placementX;
-	//	for (int z = -10; z <= 10; z++)
-	//	{
-	//		glUniform3fv(uColor, 1, (color++) % 2 ? color1 : color2);
-	//		glUniformMatrix4fv(mvIndex, 1, GL_TRUE, placementZ);
-	//		urgl.drawQuad(v1, v2, v3, v4);
-	//		placementZ *= Translate(0.0f, 0.0f, delta);
-	//	}
-	//	placementX *= Translate(delta, 0.0f, 0.0f);
-
-	//}
 }
 
 // Function: RenderScene
@@ -774,7 +747,7 @@ void RenderScene()
 {
 	// render
 	   // ------
-	CTime t = CTime::GetTickCount();	
+	CTime t = CTime::GetTickCount();
 	float currentFrame = t.GetTime();
 	deltaTime = currentFrame - lastFrame;
 	lastFrame = currentFrame;
@@ -821,7 +794,7 @@ void RenderScene()
 	glBindVertexArray(0);
 
 
-	if (g_3DModel.numOfObjects>0)
+	if (g_3DModel.numOfObjects > 0)
 	{
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture3);
@@ -845,17 +818,17 @@ void RenderScene()
 		// Draw the triangles !
 		glDrawElements(
 			GL_TRIANGLES,      // mode
-			numindices*3,    // count
+			numindices * 3,    // count
 			//numvert*3,
 			GL_UNSIGNED_INT,   // type
 			(void*)0           // element array buffer offset
 		);
 		glBindVertexArray(0);
 	}
-/*	ourModel.Draw(ourShader);
-*/
+	/*	ourModel.Draw(ourShader);
+	*/
 
-		
+
 }
 
 // Function: ChangeSize
@@ -885,8 +858,8 @@ bool ChangeSize(int w, int h)
 	lastX = w / 2.0f;
 	lastY = h / 2.0f;
 
-	SCR_WIDTH=w;
-	SCR_HEIGHT=h;
+	SCR_WIDTH = w;
+	SCR_HEIGHT = h;
 	// calculate a new projection matrix
 	//p = Perspective(50.0f, aspect_ratio, 0.5f, 20.0f);
 
@@ -899,7 +872,7 @@ bool ChangeSize(int w, int h)
 void COpenGLView::OnFileOpen()
 {
 	// TODO: добавьте свой код обработчика команд
-	
+
 	// TODO: добавьте свой код обработчика команд
 	int ttt = 1;
 	CFileDialog fileDialog(TRUE, NULL, L"*.3ds");	//объект класса выбора файла
@@ -943,7 +916,7 @@ void COpenGLView::OnFileOpen()
 		}
 
 		glBindBuffer(GL_ARRAY_BUFFER, VBO1);
-		glBufferData(GL_ARRAY_BUFFER, 8 * numvert*sizeof(float), vertices, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, 8 * numvert * sizeof(float), vertices, GL_STATIC_DRAW);
 
 		// position attribute
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
@@ -958,7 +931,7 @@ void COpenGLView::OnFileOpen()
 
 		unsigned int *indices;
 		numindices = g_3DModel.pObject[0].numOfFaces;
-		indices = new unsigned int[numindices*3];
+		indices = new unsigned int[numindices * 3];
 		// fill "indices" as needed
 		inner_count = 0;
 		for (int yy = 0; yy < numindices; yy++)
@@ -972,14 +945,14 @@ void COpenGLView::OnFileOpen()
 
 		}
 		// Generate a buffer for the indices
-		
+
 		glGenBuffers(1, &elementbuffer);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3*numindices * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3 * numindices * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
 
 		delete indices;
 		delete vertices;
-		
+
 		// Depending on how many textures we found, load each one (Assuming .BMP)
 		// If you want to load other files than bitmaps, you will need to adjust CreateTexture().
 		// Below, we go through all of the materials and check if they have a texture map to load.
@@ -992,7 +965,7 @@ void COpenGLView::OnFileOpen()
 		//for(int i = 0; i < g_3DModel.numOfMaterials; i++)
 		{
 			// Check to see if there is a file name to load in this material
-			if(strlen(g_3DModel.pMaterials[0].strFile) > 0)
+			if (strlen(g_3DModel.pMaterials[0].strFile) > 0)
 			{
 				glGenTextures(1, &texture3);
 				glBindTexture(GL_TEXTURE_2D, texture3);
@@ -1015,17 +988,8 @@ void COpenGLView::OnFileOpen()
 					std::cout << "Failed to load texture" << std::endl;
 				}
 				stbi_image_free(data);
-
-				// Use the name of the texture file to load the bitmap, with a texture ID (i).
-				// We pass in our global texture array, the name of the texture, and an ID to reference it.
-				//CreateTexture(g_3DModel.pMaterials[0].strFile, g_Texture[i]);
 			}
-
-			// Set the texture ID for this material
-			//g_3DModel.pMaterials[i].texureId = i;
 		}
-
-
 
 		// tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
 		// -------------------------------------------------------------------------------------------
@@ -1119,7 +1083,7 @@ void COpenGLView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 		camera.ProcessKeyboard(LEFT, 1);
 	if (nChar == 68)
 		camera.ProcessKeyboard(RIGHT, 1);
-		
+
 	CView::OnKeyDown(nChar, nRepCnt, nFlags);
 	Draw();
 
